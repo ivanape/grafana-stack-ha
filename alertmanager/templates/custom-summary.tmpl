@@ -1,0 +1,6 @@
+{{ define "custom.summary" -}}
+  {{ len .Alerts }} alert(s)
+  {{ range .Alerts -}}
+    Summary: {{.Annotations.summary}}
+  {{ end -}}
+{{ end -}}

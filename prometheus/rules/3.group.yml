@@ -1,0 +1,20 @@
+groups:
+  - name: group
+    interval: 10s
+    rules:
+      - alert: NewHighCPUUsage
+        expr: avg_over_time(cpu_usage[5m]) > 80
+        # for: 0s  # pending period
+        labels:
+          severity: critical
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage has been above 80% for the last 5 minutes."
+      - alert: NewHighCPUUsage
+        expr: avg_over_time(cpu_usage[5m]) > 80
+        # for: 0s  # pending period
+        labels:
+          severity: critical
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage has been above 80% for the last 5 minutes."

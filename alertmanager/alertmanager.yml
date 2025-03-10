@@ -1,0 +1,17 @@
+global:
+
+templates:
+- '/etc/alertmanager/templates/*.tmpl'
+
+route:
+  receiver: "team-X-webhook"
+  group_by: [alertname]
+  group_wait: 10s
+  group_interval: 30s
+  repeat_interval: 1h
+
+receivers:
+  - name: "team-X-webhook"
+    webhook_configs:
+      - url: https://webhook-test.com/6a940c3daaf230e94576b8a332bfb877
+        send_resolved: true
