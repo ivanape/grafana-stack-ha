@@ -2,29 +2,38 @@
 
 apiVersion: 1
 policies:
-    - orgId: 1
-      receiver: test-webhook
-      group_by:
-        - grafana_folder
-        - alertname
-      group_wait: 30s
-      group_interval: 5m
-      repeat_interval: 4h
+  - orgId: 1
+    receiver: test-webhook
+    group_by:
+      - grafana_folder
+      - alertname
+      - project_key
+    group_wait: 30s
+    group_interval: 5m
+    repeat_interval: 4h
+    routes:
+      - receiver: test-webhook
+        object_matchers:
+          - - project_key
+            - =
+            - ALERTING
+        mute_time_intervals:
+          - no_weekends
 
 muteTimes:
-    - orgId: 1
-      name: no_weekends
-      time_intervals:
-        - weekdays: [saturday, sunday]
+  - orgId: 1
+    name: no_weekends
+    time_intervals:
+      - weekdays: [saturday, sunday]
 
 contactPoints:
-    - orgId: 1
-      name: test-webhook
-      receivers:
-        - uid: test-webhook
-          type: webhook
-          settings:
-            url: https://webhook-test.com/6a940c3daaf230e94576b8a332bfb877
-          disableResolveMessage: false
-          tlsConfig:
-            insecureSkipVerify: true          
+  - orgId: 1
+    name: test-webhook
+    receivers:
+      - uid: test-webhook
+        type: webhook
+        settings:
+          url: https://webhook-test.com/6a940c3daaf230e94576b8a332bfb877
+        disableResolveMessage: false
+        tlsConfig:
+          insecureSkipVerify: true          
