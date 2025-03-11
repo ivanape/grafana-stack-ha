@@ -9,6 +9,9 @@ Based on Grafana examples:
 - https://github.com/grafana/provisioning-alerting-examples
 
 
+And:
+
+- https://github.com/VahagnMian/golang-microservices-observability
 
 ## 🛠 Pre-requisites
 
