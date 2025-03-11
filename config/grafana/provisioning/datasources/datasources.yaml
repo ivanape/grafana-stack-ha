@@ -1,0 +1,92 @@
+# For configuration options, see 
+#   https://grafana.com/docs/grafana/latest/administration/provisioning/#example-data-source-config-file
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    uid: prometheus
+    access: proxy
+    orgId: 1
+    url: http://prometheus:9090
+    basicAuth: false
+    isDefault: true
+    version: 1
+    editable: false
+    jsonData:
+      httpMethod: GET
+
+  - name: Loki
+    type: loki
+    url: http://loki:3100
+    access: proxy
+    isDefault: false
+    jsonData:
+      maxLines: 1000
+      derivedFields:
+      - datasourceName: Tempo
+        datasourceUid: Tempo
+        matcherRegex: "\"traceID\":\"(\\w+)\""
+        name: traceID
+        url: $${__value.raw}
+
+  - name: Tempo
+    type: tempo
+    url: http://tempo:3100
+    access: proxy
+    jsonData:
+      tracesToLogsV2:
+        datasourceUid: 'Loki'
+        spanStartTimeShift: '-2m'
+        spanEndTimeShift: '2m'
+        tags: [{ key: 'app', value: 'app' }, { key: 'service', value: 'service' }]
+        filterByTraceID: true
+        filterBySpanID: true
+        customQuery: true
+        query: '{app="$${__span.tags.app}"} | json | traceID="$${__trace.traceId}"'
+
+      tracesToMetrics:
+        datasourceUid: 'Prometheus'
+        spanStartTimeShift: '-2m'
+        spanEndTimeShift: '2m'
+        tags: [{ key: 'app', value: 'app' }, { key: 'service', value: 'net_host_name' }]
+        queries:
+          - name: 'Request Inflight'
+            query: 'otelchi_request_duration_millis_milliseconds_bucket{$$__tags}'
+
+      tracesToProfiles:
+        datasourceUid: 'local-pyroscope'
+        tags: [{ key: 'app', value: 'app' }, { key: 'service.name', value: 'service' }]
+        profileTypeId: 'process_cpu:cpu:nanoseconds:cpu:nanoseconds'
+        customQuery: true
+        query: 'service_name="$${__span.tags.service}"'
+
+      serviceMap:
+        datasourceUid: 'Prometheus'
+      nodeGraph:
+        enabled: true
+
+  - uid: local-pyroscope
+    type: grafana-pyroscope-datasource
+    name: Pyroscope
+    url: http://pyroscope:4040
+    jsonData:
+      keepCookies: [pyroscope_git_session]
+
+  - name: ExternalAlertmanager
+    type: alertmanager
+    url: http://alertmanager:9093
+    access: proxy
+    jsonData:
+      implementation: prometheus
+      handleGrafanaManagedAlerts: false
+    basicAuth: true
+    isDefault: false
+
+  - name: testdata
+    type: testdata
+    access: proxy
+    uid: testdata_uid
+    orgId: 1
+    basicAuth: false
+    isDefault: false        

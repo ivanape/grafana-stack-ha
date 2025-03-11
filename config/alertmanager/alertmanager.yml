@@ -13,5 +13,5 @@ route:
 receivers:
   - name: "team-X-webhook"
     webhook_configs:
-      - url: https://webhook-test.com/6a940c3daaf230e94576b8a332bfb877
+      - url: https://webhook-test.com/7bfca47cd1d21572e89534151ac8754e
         send_resolved: true

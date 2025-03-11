@@ -15,7 +15,7 @@ groups:
               relativeTimeRange:
                 from: 600
                 to: 0
-              datasourceUid: DS_PROMETHEUS_UID
+              datasourceUid: prometheus
               model:
                 editorMode: code
                 expr: count(alertmanager_cluster_members)

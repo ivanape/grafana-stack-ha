@@ -1,3 +1,4 @@
 .DS_Store
 grafana/storage
 k6
+*App

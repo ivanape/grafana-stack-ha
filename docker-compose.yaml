@@ -4,9 +4,9 @@ services:
     image: prom/prometheus:v2.54.0
     command:
       - --web.enable-remote-write-receiver
-      - --config.file=/etc/prometheus/prometheus.yml
+      - --config.file=/etc/prometheus/config.yaml
     volumes:
-      - ./prometheus/:/etc/prometheus/
+      - ./config/prometheus/:/etc/prometheus/
     ports:
       - "9090:9090"
   postgres:
@@ -14,8 +14,8 @@ services:
     image: postgres:16.4
     ports:
       - "5432:5432"
-    #volumes:
-    #  - ./grafana/storage:/var/lib/postgresql/data
+    volumes:
+      - ./postgres/storage:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -d ${GF_DATABASE_USER} -U ${GF_DATABASE_PASSWORD}"]
       timeout: 10s
@@ -33,6 +33,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis_alerting_ha:
+        condition: service_started
+      tempo:
+        condition: service_started
+      loki:
+        condition: service_started                     
     environment:
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - GF_AUTH_ANONYMOUS_ENABLED=true
@@ -46,7 +52,7 @@ services:
       - GF_DATABASE_PASSWORD=${GF_DATABASE_PASSWORD}
       - GF_DATABASE_SSL_MODE=disable
     volumes:
-      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./config/grafana/provisioning:/etc/grafana/provisioning
   grafana-node-2:
     container_name: grafana-node-2
     image: grafana/grafana:${GRAFANA_VERSION:-11.5.2}
@@ -67,14 +73,14 @@ services:
       - GF_DATABASE_PASSWORD=${GF_DATABASE_PASSWORD}
       - GF_DATABASE_SSL_MODE=disable
     volumes:
-      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./config/grafana/provisioning:/etc/grafana/provisioning
   nginx:
     container_name: nginx
     image: nginx:latest
     ports:
-      - "8080:80"
+      - "8090:80"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./config/nginx/nginx.conf:/etc/nginx/nginx.conf
     depends_on:
       - grafana-node-1
       - grafana-node-2
@@ -86,16 +92,111 @@ services:
   loki:
     image: grafana/loki:3.3.0
     container_name: loki
-    command: ["--validation.discover-service-name=[]", "--validation.discover-log-levels=false", "-config.file=/etc/loki/loki.yaml"]
+    command: ["--validation.discover-service-name=[]", "--validation.discover-log-levels=false", "-config.file=/etc/loki/config.yaml"]
     volumes:
-      - ./loki:/etc/loki/
+      - ./config/loki:/etc/loki/
     ports:
-      - "3100:3100"
+      - "3300:3100"
   alertmanager:
     image: prom/alertmanager:v0.27.0
     container_name: alertmanager
     volumes:
-      - ./alertmanager:/etc/alertmanager/
+      - ./config/alertmanager:/etc/alertmanager/
     ports:
       - 9093:9093
-      
+
+  tempo:
+    image: grafana/tempo:latest
+    container_name: "tempo"
+    volumes:
+      - ./config/tempo/config.yaml:/etc/config.yaml
+    command: "-config.file=/etc/config.yaml"
+    ports:
+      - "3100:3100"
+      - "3200:3200"
+
+  otel-collector:
+    # otel-collector to collect all our monitoring data
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    container_name: "otel-collector"
+    volumes:
+      - ./config/otel/config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP http receiver
+      - "8888:8888"   # metrics endpoint
+      - "8889:8889"   # Prometheus exporter
+  
+  pyroscope:
+    image: grafana/pyroscope:latest
+    container_name: pyroscope
+    ports:
+    - 4040:4040
+
+  front-end:
+    build:
+      context: ./apps/front-end
+      dockerfile: Dockerfile
+    container_name: frontend
+    restart: always
+    environment:
+      PORT: "80"
+      PYROSCOPE_SERVER_ADDRESS: http://pyroscope:4040
+    ports:
+      - 80:80
+    deploy:
+      mode: replicated
+      replicas: 1
+
+  broker-service:
+    build:
+      context: ./apps/broker-service
+      dockerfile: Dockerfile
+    container_name: broker
+    restart: always
+    depends_on:
+      - loki
+      - otel-collector
+    environment:
+      LOKI_WEBHOOK_URL: "http://loki:3100"
+      PORT: "80"
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_EXPORTER_OTLP_ENDPOINT: otel-collector:4317
+      OTEL_EXPORTER_OTLP_METRICS_PROTOCOL: http/protobuf
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://otel-collector:4318/v1/metrics
+      OTEL_EXPORTER_OTLP_TRACES_PROTOCOL: http/protobuf
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+      PYROSCOPE_SERVER_ADDRESS: http://pyroscope:4040
+    ports:
+      - 8080:80
+    deploy:
+      mode: replicated
+      replicas: 1
+
+  auth-service:
+    build:
+      context: ./apps/auth-service
+      dockerfile: Dockerfile
+    container_name: auth
+    restart: always
+    depends_on:
+      - postgres
+      - loki
+      - otel-collector
+    environment:
+      DSN: "host=postgres port=5432 user=postgres password=password dbname=users sslmode=disable timezone=UTC connect_timeout=5"
+      LOKI_WEBHOOK_URL: "http://loki:3300"
+      PORT: "80"
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_EXPORTER_OTLP_ENDPOINT: otel-collector:4317
+      OTEL_EXPORTER_OTLP_METRICS_PROTOCOL: http/protobuf
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://otel-collector:4318/v1/metrics
+      OTEL_EXPORTER_OTLP_TRACES_PROTOCOL: http/protobuf
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+      PYROSCOPE_SERVER_ADDRESS: http://pyroscope:4040
+    ports:
+      - 6080:80
+    deploy:
+      mode: replicated
+      replicas: 1
