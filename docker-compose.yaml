@@ -135,6 +135,9 @@ services:
       - "4318:4318"   # OTLP http receiver
       - "8888:8888"   # metrics endpoint
       - "8889:8889"   # Prometheus exporter
+    depends_on:
+      tempo:
+        condition: service_started
   
   pyroscope:
     image: grafana/pyroscope:latest
