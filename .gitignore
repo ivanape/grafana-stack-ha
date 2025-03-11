@@ -2,4 +2,4 @@
 grafana/storage
 k6
 *App
-.env
+pg_data
