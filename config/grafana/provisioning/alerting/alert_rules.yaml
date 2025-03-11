@@ -2,66 +2,180 @@
 
 apiVersion: 1
 groups:
-    - orgId: 1
-      name: critical-alerts
-      folder: Critical Alerts
-      interval: 10s
-      rules:
-        - uid: cefesuansabcwa
-          title: alertmanager-down
-          condition: C
-          data:
-            - refId: A
-              relativeTimeRange:
-                from: 600
-                to: 0
-              datasourceUid: prometheus
-              model:
-                editorMode: code
-                expr: count(alertmanager_cluster_members)
-                instant: true
-                intervalMs: 1000
-                legendFormat: __auto
-                maxDataPoints: 43200
-                range: false
-                refId: A
-            - refId: C
-              datasourceUid: __expr__
-              model:
-                conditions:
-                    - evaluator:
-                        params:
-                            - 2
-                        type: lt
-                      operator:
-                        type: and
-                      query:
-                        params:
-                            - C
-                      reducer:
-                        params: []
-                        type: last
-                      type: query
-                datasource:
-                    type: __expr__
-                    uid: __expr__
-                expression: A
-                intervalMs: 1000
-                maxDataPoints: 43200
-                refId: C
-                type: threshold
-          noDataState: NoData
-          execErrState: Error
-          for: 5s
-          annotations:
-            summary: "Grafana alerting node down"
-          isPaused: false            
-          labels:
-            env: pro
-            owner: sre
-            project_key: ALERTING
-            severity: critical
-            alertname: alertmanager-down
-          notification_settings:
-            receiver: test-webhook
-            group_by: ['project_key', 'alertname']
+  - orgId: 1
+    name: critical-alerts
+    folder: Critical Alerts
+    interval: 10s
+    rules:
+      - uid: cefesuansabcwa
+        title: alertmanager-down
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: count(alertmanager_cluster_members)
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              conditions:
+                  - evaluator:
+                      params:
+                          - 2
+                      type: lt
+                    operator:
+                      type: and
+                    query:
+                      params:
+                          - C
+                    reducer:
+                      params: []
+                      type: last
+                    type: query
+              datasource:
+                  type: __expr__
+                  uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 5s
+        annotations:
+          summary: "Grafana alerting node down"
+        isPaused: false            
+        labels:
+          env: pro
+          owner: sre
+          project_key: ALERTING
+          severity: critical
+          alertname: alertmanager-down
+        notification_settings:
+          receiver: test-webhook
+          group_by: ['project_key', 'alertname']
+  - orgId: 1
+    name: critical-alerts-1m
+    folder: Critical Alerts
+    interval: 1m
+    rules:
+      - uid: aefjf29ub5ybkb
+        title: ocp-vm-masters
+        condition: B
+        data:
+          - refId: A
+            queryType: Azure Monitor
+            relativeTimeRange:
+              from: 1800
+              to: 0
+            datasourceUid: P1EB995EACC6832D3
+            model:
+              azureMonitor:
+                  aggregation: Maximum
+                  allowedTimeGrainsMs:
+                      - 60000
+                      - 300000
+                      - 900000
+                      - 1.8e+06
+                      - 3.6e+06
+                      - 2.16e+07
+                      - 4.32e+07
+                      - 8.64e+07
+                  customNamespace: microsoft.compute/virtualmachines
+                  dimensionFilters: []
+                  metricName: Percentage CPU
+                  metricNamespace: microsoft.compute/virtualmachines
+                  region: uksouth
+                  resources:
+                      - metricNamespace: microsoft.compute/virtualmachines
+                        region: uksouth
+                        resourceGroup: ECOMMERCE-OCPICARUSUK-RSG-UKS1-PRO-MANAGED
+                        resourceName: OCPICARUSUK-XK5GV-MASTER-0
+                        subscription: 1000e43b-8542-4fde-b1b9-89c4af40b522
+                  timeGrain: PT5M
+              datasource:
+                  type: grafana-azure-monitor-datasource
+                  uid: P1EB995EACC6832D3
+              hide: false
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              queryType: Azure Monitor
+              refId: A
+              subscription: 1000e43b-8542-4fde-b1b9-89c4af40b522
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              conditions:
+                  - evaluator:
+                      params:
+                          - 10
+                          - 0
+                      type: gt
+                    operator:
+                      type: and
+                    query:
+                      params: []
+                    reducer:
+                      params: []
+                      type: avg
+                    type: query
+              datasource:
+                  name: Expression
+                  type: __expr__
+                  uid: __expr__
+              expression: C
+              hide: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: B
+              type: threshold
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              conditions:
+                  - evaluator:
+                      params:
+                          - 0
+                          - 0
+                      type: gt
+                    operator:
+                      type: and
+                    query:
+                      params: []
+                    reducer:
+                      params: []
+                      type: avg
+                    type: query
+              datasource:
+                  name: Expression
+                  type: __expr__
+                  uid: __expr__
+              expression: A
+              hide: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+              reducer: max
+              refId: C
+              settings:
+                  mode: ""
+              type: reduce
+        noDataState: NoData
+        execErrState: Error
+        for: 1m
+        isPaused: false
+        notification_settings:
+          receiver: test-webhook
+          mute_time_intervals:
+              - no_weekends

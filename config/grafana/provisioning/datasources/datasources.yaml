@@ -95,12 +95,12 @@ datasources:
     type: grafana-azure-monitor-datasource
     access: proxy
     isDefault: false
+    editable: true
     jsonData:
-      azureAuthType: clientsecret
       cloudName: azuremonitor
-      tenantId: ${AZURE_TENANT_ID}
-      clientId: ${AZURE_CLIENT_ID}
-      subscriptionId: ${AZURE_SUBSCRIPTION_ID}
+      tenantId: $AZURE_TENANT_ID
+      clientId: $AZURE_CLIENT_ID
+      subscriptionId: $AZURE_SUBSCRIPTION_ID
     secureJsonData:
-      clientSecret: ${AZURE_CLIENT_SECRET}
-    version: 1
+      clientSecret: $AZURE_CLIENT_SECRET
+    
