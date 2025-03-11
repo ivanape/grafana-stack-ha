@@ -25,3 +25,21 @@ docker-compose up -d postgres
 psql -h localhost -p 5432 -U postgres -c "CREATE DATABASE users;"
 psql -h localhost -p 5432 -U postgres -d users -a -f ./config/resources/users.sql
 ```
+
+
+# Features
+
+## Run Grafana in HA
+
+## OTEL collector for ingest metrics and traces
+
+## Send logs to Loki
+
+## Correlate traces with logs and metrics
+
+## Send profiles to Pyroscope
+
+## Grafana alerting
+
+## Grafana - Prometheus alerting integration
+

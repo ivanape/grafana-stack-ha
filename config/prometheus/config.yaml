@@ -13,10 +13,10 @@ scrape_configs:
     static_configs:
       - targets: ['otel-collector:8889']
     # only grab metrics with 'otelchi'
-    metric_relabel_configs:
-      - source_labels: [__name__]
-        regex: '.*otelchi.*'
-        action: keep
+    #metric_relabel_configs:
+    #  - source_labels: [__name__]
+    #    regex: '.*otelchi.*'
+    #    action: keep
 
   - job_name: grafana1
     honor_timestamps: true

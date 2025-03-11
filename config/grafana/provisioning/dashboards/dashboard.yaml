@@ -3,7 +3,7 @@ apiVersion: 1
 providers:
   - name: 'Default'
     type: file
-    folder: 'TestFolder'
+    folder: 'Dashboards'
     disableDeletion: false
     updateIntervalSeconds: 10
     editable: true

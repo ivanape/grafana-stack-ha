@@ -89,4 +89,18 @@ datasources:
     uid: testdata_uid
     orgId: 1
     basicAuth: false
-    isDefault: false        
+    isDefault: false
+
+  - name: Azure Monitor
+    type: grafana-azure-monitor-datasource
+    access: proxy
+    isDefault: false
+    jsonData:
+      azureAuthType: clientsecret
+      cloudName: azuremonitor
+      tenantId: ${AZURE_TENANT_ID}
+      clientId: ${AZURE_CLIENT_ID}
+      subscriptionId: ${AZURE_SUBSCRIPTION_ID}
+    secureJsonData:
+      clientSecret: ${AZURE_CLIENT_SECRET}
+    version: 1

@@ -51,6 +51,10 @@ services:
       - GF_DATABASE_USER=${GF_DATABASE_USER}
       - GF_DATABASE_PASSWORD=${GF_DATABASE_PASSWORD}
       - GF_DATABASE_SSL_MODE=disable
+      - AZURE_TENANT_ID=${AZURE_TENANT_ID}
+      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
+      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
+      - AZURE_SUBSCRIPTION_ID=${AZURE_SUBSCRIPTION_ID}
     volumes:
       - ./config/grafana/provisioning:/etc/grafana/provisioning
   grafana-node-2:
