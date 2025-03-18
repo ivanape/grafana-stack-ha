@@ -1,0 +1,173 @@
+---
+kind: Secret
+apiVersion: v1
+metadata:
+  name: credentials
+stringData:
+  GF_SECURITY_ADMIN_PASSWORD: secret
+  GF_SECURITY_ADMIN_USER: root
+type: Opaque
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: Grafana
+metadata:
+  name: test-grafana
+  labels:
+    dashboards: "grafana"
+    instanceKey: "test-grafana"
+spec:
+  version: 11.5.2
+  deployment:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: grafana
+              env:
+                - name: GF_SECURITY_ADMIN_USER
+                  valueFrom:
+                    secretKeyRef:
+                      key: GF_SECURITY_ADMIN_USER
+                      name: credentials
+                - name: GF_SECURITY_ADMIN_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      key: GF_SECURITY_ADMIN_PASSWORD
+                      name: credentials
+  config:
+    log:
+      mode: "console"
+    auth:
+      disable_login_form: "false"
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDatasource
+metadata:
+  name: testdata
+spec:
+  resyncPeriod: 3s
+  instanceSelector:
+    matchLabels:
+      instanceKey: test-grafana
+  uid: testdata-datasource
+  datasource:
+    orgId: 1
+    isDefault: true
+    name: grafana-testdata-datasource
+    type: grafana-testdata-datasource
+    access: proxy
+    basicAuth: false
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaFolder
+metadata:
+  name:  critical-alerts
+spec:
+  instanceSelector:
+    matchLabels:
+      instanceKey: test-grafana
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaContactPoint
+metadata:
+  name: default-webhook
+spec:
+  name: default-webhook
+  type: "webhook"
+  instanceSelector:
+    matchLabels:
+      instanceKey: test-grafana
+  settings:
+    httpMethod: POST
+    url: https://webhook-test.com/payload/68c78402-971f-41d0-91c1-75fc5792216c
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaAlertRuleGroup
+metadata:
+  name: alerts-by-minute
+spec:
+  folderRef: critical-alerts
+  instanceSelector:
+    matchLabels:
+      instanceKey: test-grafana
+  interval: 1m
+  rules:
+    - uid: deg43tflvusqoa
+      title: test-alert
+      condition: C
+      data:
+        - refId: A
+          relativeTimeRange:
+            from: 600
+            to: 0
+          datasourceUid: testdata-datasource
+          model:
+            intervalMs: 1000
+            lines: 10
+            maxDataPoints: 43200
+            refId: A
+            scenarioId: server_error_500
+            stringInput: 1,20,90,30,5,0
+        - refId: B
+          datasourceUid: __expr__
+          model:
+            conditions:
+                - evaluator:
+                    params:
+                        - 0
+                        - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: []
+                  reducer:
+                    params: []
+                    type: avg
+                  type: query
+            datasource:
+                name: Expression
+                type: __expr__
+                uid: __expr__
+            expression: A
+            hide: false
+            intervalMs: 1000
+            maxDataPoints: 43200
+            reducer: max
+            refId: B
+            type: reduce
+        - refId: C
+          datasourceUid: __expr__
+          model:
+            conditions:
+                - evaluator:
+                    params:
+                        - 89
+                        - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: []
+                  reducer:
+                    params: []
+                    type: avg
+                  type: query
+            datasource:
+                name: Expression
+                type: __expr__
+                uid: __expr__
+            expression: B
+            hide: false
+            intervalMs: 1000
+            maxDataPoints: 43200
+            refId: C
+            type: threshold
+      noDataState: NoData
+      execErrState: Error
+      for: 1m
+      labels:
+        owner: test
+      isPaused: false
+      notificationSettings:
+        receiver: default-webhook
